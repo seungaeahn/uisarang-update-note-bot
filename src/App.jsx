@@ -1,0 +1,66 @@
+import { useState } from 'react'
+import { useRules } from './hooks/useRules.js'
+import { useRedmineConfig } from './hooks/useRedmineConfig.js'
+import { useClaudeConfig } from './hooks/useClaudeConfig.js'
+import NoteTab from './components/NoteTab.jsx'
+import RulesTab from './components/RulesTab.jsx'
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('notes')
+  const { rules, updateGroup, reset, exportRules, importRules } = useRules()
+  const { config: redmineConfig, setConfig: setRedmineConfig } = useRedmineConfig()
+  const { claudeApiKey, setClaudeApiKey } = useClaudeConfig()
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-blue-900 text-white shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">의사랑 업데이트 노트 작성 도구</h1>
+            <p className="text-blue-300 text-xs mt-0.5">레드마인 티켓 → GitBook 업데이트 노트 자동 변환</p>
+          </div>
+          <span className="hidden sm:block text-xs text-blue-400 border border-blue-700 px-2 py-1 rounded">
+            CLAUDE.md 기반
+          </span>
+        </div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex gap-1 -mb-px">
+          <TabBtn label="📝 노트 작성" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} />
+          <TabBtn label="⚙️ 규칙 관리" active={activeTab === 'rules'} onClick={() => setActiveTab('rules')} />
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        {activeTab === 'notes' ? (
+          <NoteTab rules={rules} redmineConfig={redmineConfig} />
+        ) : (
+          <RulesTab
+            rules={rules}
+            onUpdateGroup={updateGroup}
+            onReset={reset}
+            onExport={exportRules}
+            onImport={importRules}
+            redmineConfig={redmineConfig}
+            onRedmineConfigChange={setRedmineConfig}
+            claudeApiKey={claudeApiKey}
+            onClaudeApiKeyChange={setClaudeApiKey}
+          />
+        )}
+      </main>
+    </div>
+  )
+}
+
+function TabBtn({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-5 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+        active
+          ? 'bg-white text-blue-900 border-white'
+          : 'text-blue-200 border-transparent hover:text-white hover:border-blue-400'
+      }`}
+    >
+      {label}
+    </button>
+  )
+}
