@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { parseTickets } from '../utils/parser.js'
 import { filterTickets, getDefaultCategory } from '../utils/filter.js'
 import { detectMergeGroups } from '../utils/merger.js'
-import { generateClaudePrompt, generateGitBookMarkdown } from '../utils/generator.js'
+import { generateClaudePrompt } from '../utils/generator.js'
 import { fetchVersions, fetchTicketsForVersion, issueToTicket } from '../utils/redmineApi.js'
 import Step2Analysis from './Step2Analysis.jsx'
 
@@ -35,8 +35,7 @@ export default function NoteTab({ rules, redmineConfig }) {
 
   // ── Output ────────────────────────────────
   const [promptCopied, setPromptCopied] = useState(false)
-  const [mdCopied, setMdCopied] = useState(false)
-  const [promptPreview, setPromptPreview] = useState(false)
+  const [generatedPrompt, setGeneratedPrompt] = useState(null)
 
   // ── Load versions on mount / mode switch ───
   const loadVersions = useCallback(async () => {
@@ -132,7 +131,7 @@ export default function NoteTab({ rules, redmineConfig }) {
     setSelectedMerges(defMerges)
     setOverrides({})
     setAnalyzed(true)
-    setResultTab('included')
+    setGeneratedPrompt(null)
   }, [rules])
 
   // ── Handlers ───────────────────────────────
@@ -196,8 +195,56 @@ export default function NoteTab({ rules, redmineConfig }) {
     return ruleExcluded[uid] || ''
   }
 
+  const handleAddMergeGroup = useCallback((uids) => {
+    const tickets = allTickets.filter(t => uids.includes(t.uid))
+    if (tickets.length < 2) return
+    const groupId = `manual-${Date.now()}`
+    setMergeGroups(prev => {
+      // 이미 다른 그룹에 속한 티켓은 그 그룹에서 제거
+      const cleaned = prev
+        .map(g => ({ ...g, tickets: g.tickets.filter(t => !uids.includes(t.uid)) }))
+        .filter(g => g.tickets.length >= 2)
+      return [...cleaned, { id: groupId, module: tickets[0].module, tickets, manual: true }]
+    })
+    setSelectedMerges(prev => ({ ...prev, [groupId]: true }))
+  }, [allTickets])
+
+  const handleAddToMergeGroup = useCallback((groupId, uid) => {
+    const ticket = allTickets.find(t => t.uid === uid)
+    if (!ticket) return
+    setMergeGroups(prev =>
+      prev
+        .map(g => g.id === groupId
+          ? g.tickets.some(t => t.uid === uid) ? g : { ...g, tickets: [...g.tickets, ticket], manual: true }
+          : { ...g, tickets: g.tickets.filter(t => t.uid !== uid) }
+        )
+        .filter(g => g.tickets.length >= 2)
+    )
+  }, [allTickets])
+
+  const handleRemoveMergeGroup = useCallback((groupId) => {
+    setMergeGroups(prev => prev.filter(g => g.id !== groupId))
+    setSelectedMerges(prev => { const next = { ...prev }; delete next[groupId]; return next })
+  }, [])
+
+  const handleRemoveFromMergeGroup = useCallback((groupId, uid) => {
+    setMergeGroups(prev =>
+      prev
+        .map(g => g.id === groupId
+          ? { ...g, tickets: g.tickets.filter(t => t.uid !== uid), manual: true }
+          : g
+        )
+        .filter(g => g.tickets.length >= 2)
+    )
+  }, [])
+
+  const handleGeneratePrompt = () => {
+    setGeneratedPrompt(generateClaudePrompt(version, date, outputTickets))
+  }
+
   const handleCopyPrompt = async () => {
-    const prompt = generateClaudePrompt(version, date, outputTickets)
+    const prompt = generatedPrompt
+    if (!prompt) return
     try { await navigator.clipboard.writeText(prompt) } catch {
       const el = document.createElement('textarea')
       el.value = prompt
@@ -207,56 +254,10 @@ export default function NoteTab({ rules, redmineConfig }) {
     setTimeout(() => setPromptCopied(false), 2000)
   }
 
-  const handleDownloadMd = () => {
-    const md = generateGitBookMarkdown(version, date, outputTickets)
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${(version || '업데이트노트').replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, '').trim()}.md`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleCopySkeletonMd = async () => {
-    const md = generateGitBookMarkdown(version, date, outputTickets)
-    try { await navigator.clipboard.writeText(md) } catch {
-      const el = document.createElement('textarea')
-      el.value = md
-      document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el)
-    }
-    setMdCopied(true)
-    setTimeout(() => setMdCopied(false), 2000)
-  }
 
   // ── Render ─────────────────────────────────
   return (
     <div className="space-y-5">
-      {/* ── Version info ── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-4">버전 정보</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">버전명</label>
-            <input
-              value={version}
-              onChange={e => setVersion(e.target.value)}
-              placeholder="예: 의사랑 2026년 비정기 5차"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">업데이트 날짜</label>
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* ── Input mode card ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {/* Mode toggle */}
@@ -402,67 +403,54 @@ export default function NoteTab({ rules, redmineConfig }) {
             onCategoryChange={(uid, cat) => setCategories(prev => ({ ...prev, [uid]: cat }))}
             onMergeToggle={id => setSelectedMerges(prev => ({ ...prev, [id]: !prev[id] }))}
             onTicketToggle={toggleTicket}
+            onAddMergeGroup={handleAddMergeGroup}
+            onRemoveMergeGroup={handleRemoveMergeGroup}
+            onRemoveFromMergeGroup={handleRemoveFromMergeGroup}
           />
 
           {/* ── Output ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
-            <div>
-              <h3 className="font-semibold text-gray-800">출력</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                출력 대상 {outputTickets.length}건 ·{' '}
-                새로운 기능 {outputTickets.filter(t => t.category === '새로운 기능').length} /{' '}
-                개선된 기능 {outputTickets.filter(t => t.category === '개선된 기능').length} /{' '}
-                오류 수정사항 {outputTickets.filter(t => t.category === '오류 수정사항').length}
-              </p>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h3 className="font-semibold text-gray-800">출력</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  포함 {outputTickets.length}건 ·{' '}
+                  새로운 기능 {outputTickets.filter(t => t.category === '새로운 기능').length} /{' '}
+                  개선된 기능 {outputTickets.filter(t => t.category === '개선된 기능').length} /{' '}
+                  오류 수정사항 {outputTickets.filter(t => t.category === '오류 수정사항').length}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleGeneratePrompt}
+                  disabled={outputTickets.length === 0}
+                  className="bg-blue-800 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm"
+                >
+                  {generatedPrompt ? '🔄 프롬프트 재생성' : '🤖 프롬프트 생성하기'}
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleCopyPrompt}
-                disabled={outputTickets.length === 0}
-                className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed ${
-                  promptCopied ? 'bg-green-600 text-white' : 'bg-blue-800 hover:bg-blue-700 text-white'
-                }`}
-              >
-                {promptCopied ? '✓ 복사 완료!' : '🤖 Claude 프롬프트 복사'}
-              </button>
-              <button
-                onClick={() => setPromptPreview(v => !v)}
-                disabled={outputTickets.length === 0}
-                className="px-4 py-2.5 rounded-lg font-medium text-sm border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {promptPreview ? '접기' : '미리보기'}
-              </button>
-              <button
-                onClick={handleCopySkeletonMd}
-                disabled={outputTickets.length === 0}
-                className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-colors border disabled:opacity-40 disabled:cursor-not-allowed ${
-                  mdCopied ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {mdCopied ? '✓ 복사 완료!' : '📄 GitBook 초안 복사'}
-              </button>
-              <button
-                onClick={handleDownloadMd}
-                disabled={outputTickets.length === 0}
-                className="px-6 py-2.5 rounded-lg font-medium text-sm transition-colors border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                💾 초안 다운로드
-              </button>
-            </div>
-            {promptPreview && (
+
+            {generatedPrompt ? (
               <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
-                  <span className="text-xs font-medium text-gray-400">Claude 프롬프트 미리보기</span>
+                  <span className="text-xs font-medium text-gray-400">Claude 프롬프트</span>
                   <button
-                    onClick={() => setPromptPreview(false)}
-                    className="text-gray-500 hover:text-gray-300 text-sm"
+                    onClick={handleCopyPrompt}
+                    className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+                      promptCopied ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
                   >
-                    ✕
+                    {promptCopied ? '✓ 복사 완료!' : '복사'}
                   </button>
                 </div>
-                <pre className="p-4 text-xs text-gray-300 font-mono overflow-auto max-h-96 whitespace-pre-wrap">
-                  {generateClaudePrompt(version, date, outputTickets)}
+                <pre className="p-4 text-xs text-gray-300 font-mono overflow-auto whitespace-pre-wrap">
+                  {generatedPrompt}
                 </pre>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400 text-sm">
+                티켓 검토 후 "프롬프트 생성하기"를 눌러주세요
               </div>
             )}
           </div>

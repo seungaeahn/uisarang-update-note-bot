@@ -29,6 +29,14 @@ function getExclusionReason(ticket, rules) {
   for (const kw of descKws) {
     if (fullText.includes(kw)) return `설명: "${kw}"`
   }
+
+  // Common 유형 자동 제외 (사용자 노출 기능은 화이트리스트로 유지)
+  if (ticket.type === 'Common' && rules?.excludeCommonType !== false) {
+    const whitelistKws = rules?.commonTypeIncludeKeywords ?? []
+    const isWhitelisted = whitelistKws.some(kw => fullText.includes(kw))
+    if (!isWhitelisted) return 'Common 유형 내부 처리 항목'
+  }
+
   return null
 }
 

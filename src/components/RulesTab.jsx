@@ -188,6 +188,47 @@ export default function RulesTab({
         </div>
       </section>
 
+      {/* ── Common type rule ── */}
+      <section>
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Common 유형 처리</h3>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Common 유형 자동 제외</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  DB 변경, 내부 구현 등 Common 유형 티켓을 기본으로 제외해요.
+                  아래 포함 예외 키워드가 있으면 유지해요.
+                </p>
+              </div>
+              <button
+                onClick={() => onUpdateGroup('excludeCommonType', !rules.excludeCommonType)}
+                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
+                  rules.excludeCommonType ? 'bg-blue-700' : 'bg-gray-300'
+                }`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                  rules.excludeCommonType ? 'left-5' : 'left-0.5'
+                }`} />
+              </button>
+            </div>
+          </div>
+
+          {rules.excludeCommonType && (
+            <RuleGroupEditor
+              title="Common 유형 포함 예외 키워드"
+              description="Common 유형이라도 이 키워드가 설명에 있으면 포함해요."
+              items={rules.commonTypeIncludeKeywords || []}
+              onChange={items => onUpdateGroup('commonTypeIncludeKeywords', items)}
+              tagColor="emerald"
+            />
+          )}
+        </div>
+      </section>
+
       {/* ── Classification rules ── */}
       <section>
         <div className="flex items-center gap-3 mb-4">
@@ -223,6 +264,12 @@ export default function RulesTab({
           <div className="flex-1 h-px bg-gray-200" />
         </div>
         <div className="bg-gray-50 rounded-xl border border-gray-200 p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div>
+            <div className="text-xs font-medium text-gray-500 mb-1">Common 자동 제외</div>
+            <div className={`text-sm font-bold px-2 py-1 rounded-md w-fit ${rules.excludeCommonType ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'}`}>
+              {rules.excludeCommonType ? 'ON' : 'OFF'}
+            </div>
+          </div>
           {[...EXCLUDE_GROUPS, ...CLASSIFICATION_GROUPS].map(g => (
             <div key={g.key}>
               <div className="text-xs font-medium text-gray-500 mb-1">{g.title}</div>
