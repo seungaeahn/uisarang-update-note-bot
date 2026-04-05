@@ -18,11 +18,13 @@ export async function fetchVersions(config) {
   if (res.status === 401 || res.status === 403) throw new Error(`인증 실패 (HTTP ${res.status}). API 키가 올바른지 확인해 주세요.`)
   if (!res.ok) throw new Error(`버전 목록 수집 실패 (HTTP ${res.status})`)
   const data = await res.json()
-  // Sort: open first, then by date desc
-  return (data.versions || []).sort((a, b) => {
-    if (a.status === b.status) return new Date(b.created_on) - new Date(a.created_on)
-    return a.status === 'open' ? -1 : 1
-  })
+  // 정기/비정기 버전만 표시, open 먼저, 최신순 정렬
+  return (data.versions || [])
+    .filter(v => v.name && (v.name.includes('정기') || v.name.includes('비정기')))
+    .sort((a, b) => {
+      if (a.status === b.status) return new Date(b.created_on) - new Date(a.created_on)
+      return a.status === 'open' ? -1 : 1
+    })
 }
 
 /**
