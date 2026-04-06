@@ -78,7 +78,7 @@ export async function fetchTicketsForVersion(config, versionId, onProgress) {
 }
 
 async function fetchSubIssues(apiKey, parentId, onProgress) {
-  const allIssues = []
+  const directChildren = []
   let offset = 0
   const limit = 100
 
@@ -101,14 +101,27 @@ async function fetchSubIssues(apiKey, parentId, onProgress) {
     if (!res.ok) throw new Error(`하위 이슈 수집 실패 (HTTP ${res.status})`)
     const data = await res.json()
 
-    allIssues.push(...(data.issues || []))
-    onProgress?.(allIssues.length, data.total_count)
+    directChildren.push(...(data.issues || []))
+    onProgress?.(directChildren.length, data.total_count)
 
-    if (allIssues.length >= data.total_count || (data.issues || []).length === 0) break
+    if (directChildren.length >= data.total_count || (data.issues || []).length === 0) break
     offset += limit
   }
 
-  return fetchIssueDetails(apiKey, allIssues, onProgress)
+  // 각 이슈의 상세 정보(description, children) 수집
+  const withDetails = await fetchIssueDetails(apiKey, directChildren, onProgress)
+
+  // children이 있는 이슈는 재귀 탐색 (Common 티켓 하위 일감 등)
+  const result = []
+  for (const issue of withDetails) {
+    result.push(issue)
+    if (issue.children && issue.children.length > 0) {
+      const grandChildren = await fetchSubIssues(apiKey, issue.id, onProgress)
+      result.push(...grandChildren)
+    }
+  }
+
+  return result
 }
 
 async function fetchIssueDetails(apiKey, issues, onProgress) {
@@ -120,12 +133,17 @@ async function fetchIssueDetails(apiKey, issues, onProgress) {
     const details = await Promise.all(
       batch.map(async issue => {
         try {
-          const res = await fetch(`/api/redmine/issues/${issue.id}.json`, {
+          const res = await fetch(`/api/redmine/issues/${issue.id}.json?include=children`, {
             headers: { 'X-Redmine-API-Key': apiKey },
           })
           if (!res.ok) return issue
           const data = await res.json()
-          return { ...issue, description: data.issue?.description || '' }
+          return {
+            ...issue,
+            description: data.issue?.description || '',
+            children: data.issue?.children || [],
+            parent: data.issue?.parent || issue.parent || null,
+          }
         } catch {
           return issue
         }
@@ -168,6 +186,7 @@ export function issueToTicket(issue, uid) {
     description,
     notes,
     body,
+    parentId: issue.parent?.id ? String(issue.parent.id) : null,
     raw: `* ${type} #${issue.id}: ${moduleRaw} ${description}${notes ? ' - ' + notes : ''}`.trim(),
   }
 }

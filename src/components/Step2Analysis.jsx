@@ -18,6 +18,7 @@ export default function Step2Analysis({
   onMergeToggle,
   onTicketToggle,
   onAddMergeGroup,
+  onAddToMergeGroup,
   onRemoveMergeGroup,
   onRemoveFromMergeGroup,
 }) {
@@ -112,6 +113,7 @@ export default function Step2Analysis({
               onRemoveMergeGroup={onRemoveMergeGroup}
               onRemoveFromMergeGroup={onRemoveFromMergeGroup}
               onAddMergeGroup={onAddMergeGroup}
+              onAddToMergeGroup={onAddToMergeGroup}
               matchSearch={matchSearch}
             />
           )}
@@ -206,36 +208,71 @@ function StepDot({ num, label, active, done, badge, onClick }) {
 // ─── 1단계: 포함/제외 ──────────────────────────────────────────────────────────
 
 function FilterPanel({ includedTickets, excludedTickets, selectedUid, onSelect, onToggle, matchSearch }) {
+  const allTickets = useMemo(() => [...includedTickets, ...excludedTickets], [includedTickets, excludedTickets])
+
+  // 목록 내 ticketId 집합
+  const ticketIdSet = useMemo(() => new Set(allTickets.map(t => t.ticketId)), [allTickets])
+
+  // ticketId → 하위 일감 목록 (parentId가 목록 내 티켓을 가리키는 경우만)
+  const subTaskMap = useMemo(() => {
+    const map = {}
+    allTickets.forEach(t => {
+      if (t.parentId && ticketIdSet.has(t.parentId)) {
+        if (!map[t.parentId]) map[t.parentId] = []
+        map[t.parentId].push(t)
+      }
+    })
+    return map
+  }, [allTickets, ticketIdSet])
+
+  // 하위 일감 uid 집합 (최상위 목록에서 제외)
+  const subTaskUids = useMemo(() => {
+    const s = new Set()
+    allTickets.forEach(t => { if (t.parentId && ticketIdSet.has(t.parentId)) s.add(t.uid) })
+    return s
+  }, [allTickets, ticketIdSet])
+
+  const topIncluded = includedTickets.filter(matchSearch).filter(t => !subTaskUids.has(t.uid))
+  const topExcluded = excludedTickets.filter(matchSearch).filter(t => !subTaskUids.has(t.uid))
+
   return (
     <>
-      {includedTickets.filter(matchSearch).map(t => (
-        <SimpleTicketRow
-          key={t.uid}
-          ticket={t}
-          checked
-          selected={selectedUid === t.uid}
-          onSelect={() => onSelect(t.uid)}
-          onToggle={() => onToggle(t.uid)}
-        />
+      {topIncluded.map(t => (
+        <div key={t.uid}>
+          <SimpleTicketRow
+            ticket={t}
+            checked
+            selected={selectedUid === t.uid}
+            onSelect={() => onSelect(t.uid)}
+            onToggle={() => onToggle(t.uid)}
+          />
+          {subTaskMap[t.ticketId]?.map(sub => (
+            <SubTaskRow key={sub.uid} ticket={sub} selected={selectedUid === sub.uid} onSelect={() => onSelect(sub.uid)} />
+          ))}
+        </div>
       ))}
 
-      {excludedTickets.filter(matchSearch).length > 0 && (
+      {topExcluded.length > 0 && (
         <div className="px-3 py-1.5 bg-gray-50 border-y border-gray-100 sticky top-0 z-10">
           <span className="text-xs font-medium text-gray-400">
-            제외된 티켓 {excludedTickets.filter(matchSearch).length}건
+            제외된 티켓 {topExcluded.length}건
           </span>
         </div>
       )}
 
-      {excludedTickets.filter(matchSearch).map(t => (
-        <SimpleTicketRow
-          key={t.uid}
-          ticket={t}
-          checked={false}
-          selected={selectedUid === t.uid}
-          onSelect={() => onSelect(t.uid)}
-          onToggle={() => onToggle(t.uid)}
-        />
+      {topExcluded.map(t => (
+        <div key={t.uid}>
+          <SimpleTicketRow
+            ticket={t}
+            checked={false}
+            selected={selectedUid === t.uid}
+            onSelect={() => onSelect(t.uid)}
+            onToggle={() => onToggle(t.uid)}
+          />
+          {subTaskMap[t.ticketId]?.map(sub => (
+            <SubTaskRow key={sub.uid} ticket={sub} selected={selectedUid === sub.uid} onSelect={() => onSelect(sub.uid)} />
+          ))}
+        </div>
       ))}
     </>
   )
@@ -275,11 +312,36 @@ function SimpleTicketRow({ ticket, checked, selected, onSelect, onToggle }) {
   )
 }
 
+function SubTaskRow({ ticket, selected, onSelect }) {
+  return (
+    <div
+      onClick={onSelect}
+      className={`flex items-start gap-2 pl-8 pr-3 py-1.5 border-b border-gray-100 cursor-pointer transition-colors ${
+        selected ? 'bg-blue-50 border-l-2 border-l-blue-400' : 'bg-gray-50/60 hover:bg-gray-100/80'
+      }`}
+    >
+      <div className="w-1 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+          <TypeBadge type={ticket.type} />
+          {ticket.module && (
+            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 rounded">{ticket.module}</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 leading-snug">
+          <span className="text-gray-400 mr-1">#{ticket.ticketId}</span>
+          {ticket.description}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── 2단계: 병합 ──────────────────────────────────────────────────────────────
 
 function MergePanel({
   includedTickets, activeMergeGroups, mergeGroupByUid, selectedMerges,
-  selectedUid, onSelect, onMergeToggle, onRemoveMergeGroup, onRemoveFromMergeGroup, onAddMergeGroup, matchSearch,
+  selectedUid, onSelect, onMergeToggle, onRemoveMergeGroup, onRemoveFromMergeGroup, onAddMergeGroup, onAddToMergeGroup, matchSearch,
 }) {
   const [mergeSelection, setMergeSelection] = useState(new Set())
 
@@ -298,6 +360,13 @@ function MergePanel({
     const uids = [...mergeSelection]
     if (uids.length < 2) return
     onAddMergeGroup?.(uids)
+    clearSelection()
+  }
+
+  const handleAddToGroup = (groupId) => {
+    const uids = [...mergeSelection]
+    if (!uids.length) return
+    onAddToMergeGroup?.(groupId, uids)
     clearSelection()
   }
 
@@ -366,7 +435,13 @@ function MergePanel({
               <span className="text-xs font-medium text-gray-600 flex-1 truncate">
                 {groupTickets.length}개 티켓
               </span>
-              {group.manual && (
+              {selCount >= 1 && (
+                <button
+                  onClick={() => handleAddToGroup(group.id)}
+                  className="text-xs px-2 py-0.5 rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors shrink-0"
+                >+ 여기에 추가</button>
+              )}
+              {group.manual && selCount === 0 && (
                 <button
                   onClick={() => onRemoveMergeGroup?.(group.id)}
                   className="text-gray-400 hover:text-red-500 transition-colors px-1 text-xs"

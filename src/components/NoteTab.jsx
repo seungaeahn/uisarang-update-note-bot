@@ -160,6 +160,7 @@ export default function NoteTab({ rules, redmineConfig }) {
       )
 
       const tickets = issues.map((issue, i) => issueToTicket(issue, i + 1))
+      console.log('[DEBUG] tickets with parentId:', tickets.map(t => ({ id: t.ticketId, type: t.type, parentId: t.parentId, desc: t.description?.slice(0, 30) })))
 
       // Auto-fill version name from selected version
       const selectedVer = versions.find(v => String(v.id) === selectedVersionId)
@@ -209,16 +210,19 @@ export default function NoteTab({ rules, redmineConfig }) {
     setSelectedMerges(prev => ({ ...prev, [groupId]: true }))
   }, [allTickets])
 
-  const handleAddToMergeGroup = useCallback((groupId, uid) => {
-    const ticket = allTickets.find(t => t.uid === uid)
-    if (!ticket) return
+  const handleAddToMergeGroup = useCallback((groupId, uids) => {
+    const uidList = Array.isArray(uids) ? uids : [uids]
+    const tickets = allTickets.filter(t => uidList.includes(t.uid))
+    if (!tickets.length) return
     setMergeGroups(prev =>
-      prev
-        .map(g => g.id === groupId
-          ? g.tickets.some(t => t.uid === uid) ? g : { ...g, tickets: [...g.tickets, ticket], manual: true }
-          : { ...g, tickets: g.tickets.filter(t => t.uid !== uid) }
-        )
-        .filter(g => g.tickets.length >= 2)
+      prev.map(g => {
+        if (g.id === groupId) {
+          const existing = new Set(g.tickets.map(t => t.uid))
+          const toAdd = tickets.filter(t => !existing.has(t.uid))
+          return { ...g, tickets: [...g.tickets, ...toAdd], manual: true }
+        }
+        return { ...g, tickets: g.tickets.filter(t => !uidList.includes(t.uid)) }
+      }).filter(g => g.tickets.length >= 2)
     )
   }, [allTickets])
 
@@ -404,6 +408,7 @@ export default function NoteTab({ rules, redmineConfig }) {
             onMergeToggle={id => setSelectedMerges(prev => ({ ...prev, [id]: !prev[id] }))}
             onTicketToggle={toggleTicket}
             onAddMergeGroup={handleAddMergeGroup}
+            onAddToMergeGroup={handleAddToMergeGroup}
             onRemoveMergeGroup={handleRemoveMergeGroup}
             onRemoveFromMergeGroup={handleRemoveFromMergeGroup}
           />

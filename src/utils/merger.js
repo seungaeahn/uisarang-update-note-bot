@@ -27,6 +27,25 @@ export function detectMergeGroups(tickets) {
   const groups = []
   const processed = new Set()
 
+  // 1순위: Common 티켓 + 하위 일감 자동 묶음
+  const ticketIdMap = new Map(tickets.map(t => [t.ticketId, t]))
+  for (const ticket of tickets) {
+    if (ticket.type !== 'Common') continue
+    if (processed.has(ticket.uid)) continue
+
+    const subTasks = tickets.filter(t => t.parentId === ticket.ticketId)
+    if (subTasks.length === 0) continue
+
+    const group = [ticket, ...subTasks]
+    group.forEach(t => processed.add(t.uid))
+    groups.push({
+      id: `common-${ticket.uid}`,
+      module: ticket.module,
+      tickets: group,
+    })
+  }
+
+  // 2순위: 키워드 유사도 기반 병합
   for (let i = 0; i < tickets.length; i++) {
     if (processed.has(tickets[i].uid)) continue
 
@@ -38,10 +57,8 @@ export function detectMergeGroups(tickets) {
       const a = tickets[i]
       const b = tickets[j]
 
-      // Must be same module and similar type category
       if (a.module !== b.module) continue
 
-      // Need at least 2 common meaningful keywords
       if (similarityScore(a, b) >= 2) {
         group.push(tickets[j])
         processed.add(tickets[j].uid)
