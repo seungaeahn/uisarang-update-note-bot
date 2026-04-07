@@ -19,6 +19,8 @@ if not exist "node_modules" (
 )
 
 echo  브라우저에서 http://localhost:5173 으로 접속하세요.
+echo  같은 네트워크의 팀원은 이 PC의 IP 주소로 접속할 수 있어요.
+echo  (예: http://192.168.x.x:5173)
 echo  종료하려면 이 창을 닫으세요.
 echo.
 npm run dev

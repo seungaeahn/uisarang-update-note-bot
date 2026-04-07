@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,   // 같은 네트워크의 다른 PC에서 접속 허용
     proxy: {
       '/api/redmine': {
         target: 'https://redmine.ubware.com',
