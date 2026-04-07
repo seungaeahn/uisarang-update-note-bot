@@ -14,23 +14,35 @@
 
 ## 시작하기
 
+### 1. Node.js 설치 (최초 1회)
+
+https://nodejs.org 에서 **LTS** 버전을 다운로드해 설치하세요.
+
+### 2. 실행
+
+`start.bat` 파일을 더블클릭하면 자동으로 설치 및 실행돼요.
+
+브라우저에서 `http://localhost:5173` 접속
+
+> 최초 실행 시 패키지 설치로 1~2분 걸릴 수 있어요. 이후 실행부터는 바로 열려요.
+
+### 개발자용
+
 ```bash
 npm install
 npm run dev
 ```
 
-브라우저에서 `http://localhost:5173` 접속
+## 레드마인 연동 설정
 
-## 환경 변수
+앱 실행 후 **규칙 관리 탭 > 레드마인 연동**에서 API 키와 프로젝트 ID를 입력하세요.
 
-`.env.local` 파일을 생성하고 아래 항목을 설정하세요.
+또는 `.env.local` 파일을 생성해 미리 설정할 수 있어요.
 
 ```
 VITE_REDMINE_API_KEY=your_api_key
 VITE_REDMINE_PROJECT_ID=your_project_id
 ```
-
-> 레드마인 연동 설정은 앱 내 **규칙 관리 > 레드마인 연동** 탭에서도 가능합니다.
 
 ## 자동 병합 규칙
 
