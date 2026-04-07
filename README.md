@@ -44,6 +44,16 @@ VITE_REDMINE_API_KEY=your_api_key
 VITE_REDMINE_PROJECT_ID=your_project_id
 ```
 
+## 업데이트 받기
+
+새 버전이 나왔을 때는 아래 순서로 업데이트하세요.
+
+1. 터미널(cmd)에서 프로젝트 폴더로 이동
+2. `git pull` 실행
+3. `start.bat` 다시 실행
+
+> Git이 없다면 GitHub에서 ZIP으로 다시 다운로드해 덮어씌우면 돼요.
+
 ## 자동 병합 규칙
 
 티켓 분석 시 아래 두 조건을 **모두** 충족하면 자동으로 병합 그룹을 생성해요.
