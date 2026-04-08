@@ -4,9 +4,9 @@ const STORAGE_KEY = 'uisarang-redmine-config-v1'
 
 function getDefaults() {
   return {
-    url: import.meta.env.VITE_REDMINE_URL || '',
-    apiKey: import.meta.env.VITE_REDMINE_KEY || '',
-    projectId: import.meta.env.VITE_REDMINE_PROJECT || '',
+    url: import.meta.env.VITE_REDMINE_URL || 'https://redmine.ubware.com',
+    apiKey: '',
+    projectId: import.meta.env.VITE_REDMINE_PROJECT || 'ysr',
     parentKeyword: '■ 업데이트 목록',
   }
 }

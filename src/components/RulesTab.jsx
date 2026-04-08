@@ -296,7 +296,7 @@ export default function RulesTab({
                 type="text"
                 value={localConfig.url}
                 onChange={e => handleLocalConfigChange('url', e.target.value)}
-                placeholder="https://redmine.example.com"
+                placeholder="https://redmine.ubware.com"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
               />
             </div>
@@ -331,7 +331,7 @@ export default function RulesTab({
                 type="text"
                 value={localConfig.projectId}
                 onChange={e => handleLocalConfigChange('projectId', e.target.value)}
-                placeholder="예: my-project"
+                placeholder="예: ysr"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
               />
               <p className="text-xs text-gray-400 mt-1">레드마인 프로젝트 URL에서 확인할 수 있어요. (예: /projects/my-project)</p>
