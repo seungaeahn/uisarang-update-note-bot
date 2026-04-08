@@ -289,42 +289,6 @@ export default function NoteTab({ rules, redmineConfig }) {
   // ── Render ─────────────────────────────────
   return (
     <div className="space-y-5">
-      {/* ── CSV 업로드 카드 ── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm font-medium text-gray-700 shrink-0">📎 업데이트 파일 CSV</span>
-          <button
-            onClick={() => csvInputRef.current?.click()}
-            className="px-3.5 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-          >
-            파일 선택
-          </button>
-          <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
-          {csvFileName && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">{csvFileName}</span>
-              {csvRows && (
-                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
-                  {csvRows.length}행 · {getOutpatientInfo(csvRows).version}
-                </span>
-              )}
-              <button
-                onClick={() => { setCsvRows(null); setCsvFileName(null); setCsvError(null) }}
-                className="text-gray-400 hover:text-gray-600 text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-          {!csvFileName && (
-            <span className="text-xs text-gray-400">업로드하지 않으면 버전 정보가 X.X.X.X로 출력돼요</span>
-          )}
-        </div>
-        {csvError && (
-          <p className="mt-2 text-xs text-red-600">{csvError}</p>
-        )}
-      </div>
-
       {/* ── Input mode card ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {/* Mode toggle */}
@@ -475,6 +439,42 @@ export default function NoteTab({ rules, redmineConfig }) {
             onRemoveMergeGroup={handleRemoveMergeGroup}
             onRemoveFromMergeGroup={handleRemoveFromMergeGroup}
           />
+
+          {/* ── CSV 업로드 카드 ── */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium text-gray-700 shrink-0">📎 업데이트 파일 CSV</span>
+              <button
+                onClick={() => csvInputRef.current?.click()}
+                className="px-3.5 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+              >
+                파일 선택
+              </button>
+              <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
+              {csvFileName && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">{csvFileName}</span>
+                  {csvRows && (
+                    <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                      {csvRows.length}행 · {getOutpatientInfo(csvRows).version}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => { setCsvRows(null); setCsvFileName(null); setCsvError(null) }}
+                    className="text-gray-400 hover:text-gray-600 text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {!csvFileName && (
+                <span className="text-xs text-gray-400">업로드하지 않으면 버전 정보가 X.X.X.X로 출력돼요</span>
+              )}
+            </div>
+            {csvError && (
+              <p className="mt-2 text-xs text-red-600">{csvError}</p>
+            )}
+          </div>
 
           {/* ── Output ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
