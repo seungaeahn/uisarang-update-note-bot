@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { parseTickets } from '../utils/parser.js'
 import { filterTickets, getDefaultCategory } from '../utils/filter.js'
 import { detectMergeGroups } from '../utils/merger.js'
 import { generateClaudePrompt } from '../utils/generator.js'
 import { fetchVersions, fetchTicketsForVersion, issueToTicket } from '../utils/redmineApi.js'
+import { parseCsv, getOutpatientInfo } from '../utils/csvParser.js'
 import Step2Analysis from './Step2Analysis.jsx'
 
 export default function NoteTab({ rules, redmineConfig }) {
@@ -32,6 +33,12 @@ export default function NoteTab({ rules, redmineConfig }) {
   const [overrides, setOverrides] = useState({})
   const [categories, setCategories] = useState({})
   const [selectedMerges, setSelectedMerges] = useState({})
+
+  // ── CSV ────────────────────────────────────
+  const [csvRows, setCsvRows] = useState(null)
+  const [csvFileName, setCsvFileName] = useState(null)
+  const [csvError, setCsvError] = useState(null)
+  const csvInputRef = useRef()
 
   // ── Output ────────────────────────────────
   const [promptCopied, setPromptCopied] = useState(false)
@@ -242,8 +249,28 @@ export default function NoteTab({ rules, redmineConfig }) {
     )
   }, [])
 
+  const handleCsvUpload = e => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      try {
+        const rows = parseCsv(ev.target.result)
+        setCsvRows(rows)
+        setCsvFileName(file.name)
+        setCsvError(null)
+      } catch (err) {
+        setCsvRows(null)
+        setCsvFileName(null)
+        setCsvError(err.message)
+      }
+    }
+    reader.readAsText(file, 'UTF-8')
+    e.target.value = ''
+  }
+
   const handleGeneratePrompt = () => {
-    setGeneratedPrompt(generateClaudePrompt(version, date, outputTickets))
+    setGeneratedPrompt(generateClaudePrompt(version, date, outputTickets, csvRows))
   }
 
   const handleCopyPrompt = async () => {
@@ -262,6 +289,42 @@ export default function NoteTab({ rules, redmineConfig }) {
   // ── Render ─────────────────────────────────
   return (
     <div className="space-y-5">
+      {/* ── CSV 업로드 카드 ── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium text-gray-700 shrink-0">📎 업데이트 파일 CSV</span>
+          <button
+            onClick={() => csvInputRef.current?.click()}
+            className="px-3.5 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+          >
+            파일 선택
+          </button>
+          <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
+          {csvFileName && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">{csvFileName}</span>
+              {csvRows && (
+                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                  {csvRows.length}행 · {getOutpatientInfo(csvRows).version}
+                </span>
+              )}
+              <button
+                onClick={() => { setCsvRows(null); setCsvFileName(null); setCsvError(null) }}
+                className="text-gray-400 hover:text-gray-600 text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {!csvFileName && (
+            <span className="text-xs text-gray-400">업로드하지 않으면 버전 정보가 X.X.X.X로 출력돼요</span>
+          )}
+        </div>
+        {csvError && (
+          <p className="mt-2 text-xs text-red-600">{csvError}</p>
+        )}
+      </div>
+
       {/* ── Input mode card ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {/* Mode toggle */}
