@@ -209,6 +209,7 @@ function StepDot({ num, label, active, done, badge, onClick }) {
 
 function FilterPanel({ includedTickets, excludedTickets, selectedUid, onSelect, onToggle, matchSearch }) {
   const allTickets = useMemo(() => [...includedTickets, ...excludedTickets], [includedTickets, excludedTickets])
+  const includedUidSet = useMemo(() => new Set(includedTickets.map(t => t.uid)), [includedTickets])
 
   // 목록 내 ticketId 집합
   const ticketIdSet = useMemo(() => new Set(allTickets.map(t => t.ticketId)), [allTickets])
@@ -247,7 +248,7 @@ function FilterPanel({ includedTickets, excludedTickets, selectedUid, onSelect, 
             onToggle={() => onToggle(t.uid)}
           />
           {subTaskMap[t.ticketId]?.map(sub => (
-            <SubTaskRow key={sub.uid} ticket={sub} selected={selectedUid === sub.uid} onSelect={() => onSelect(sub.uid)} />
+            <SubTaskRow key={sub.uid} ticket={sub} checked={includedUidSet.has(sub.uid)} selected={selectedUid === sub.uid} onSelect={() => onSelect(sub.uid)} onToggle={() => onToggle(sub.uid)} />
           ))}
         </div>
       ))}
@@ -270,7 +271,7 @@ function FilterPanel({ includedTickets, excludedTickets, selectedUid, onSelect, 
             onToggle={() => onToggle(t.uid)}
           />
           {subTaskMap[t.ticketId]?.map(sub => (
-            <SubTaskRow key={sub.uid} ticket={sub} selected={selectedUid === sub.uid} onSelect={() => onSelect(sub.uid)} />
+            <SubTaskRow key={sub.uid} ticket={sub} checked={includedUidSet.has(sub.uid)} selected={selectedUid === sub.uid} onSelect={() => onSelect(sub.uid)} onToggle={() => onToggle(sub.uid)} />
           ))}
         </div>
       ))}
@@ -312,15 +313,23 @@ function SimpleTicketRow({ ticket, checked, selected, onSelect, onToggle }) {
   )
 }
 
-function SubTaskRow({ ticket, selected, onSelect }) {
+function SubTaskRow({ ticket, checked, selected, onSelect, onToggle }) {
   return (
     <div
       onClick={onSelect}
-      className={`flex items-start gap-2 pl-8 pr-3 py-1.5 border-b border-gray-100 cursor-pointer transition-colors ${
-        selected ? 'bg-blue-50 border-l-2 border-l-blue-400' : 'bg-gray-50/60 hover:bg-gray-100/80'
+      className={`flex items-start gap-2 pl-7 pr-3 py-1.5 border-b border-gray-100 cursor-pointer transition-colors ${
+        selected ? 'bg-blue-50 border-l-2 border-l-blue-400' :
+        checked  ? 'bg-gray-50/60 hover:bg-gray-100/80 border-l-2 border-l-transparent' :
+                   'opacity-50 hover:opacity-80 bg-gray-50/50 border-l-2 border-l-transparent'
       }`}
     >
-      <div className="w-1 shrink-0" />
+      <input
+        type="checkbox"
+        checked={!!checked}
+        onChange={() => onToggle?.()}
+        onClick={e => e.stopPropagation()}
+        className="mt-0.5 w-3.5 h-3.5 accent-blue-700 cursor-pointer shrink-0"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1 mb-0.5 flex-wrap">
           <TypeBadge type={ticket.type} />
