@@ -27,17 +27,6 @@ export const DEFAULT_RULES = {
     '(진행중)', '(확인중)', '(대기중)',
   ],
 
-  // Common 유형 자동 제외 (기본 OFF)
-  excludeCommonType: false,
-
-  // Common 유형이라도 이 키워드가 있으면 포함
-  commonTypeIncludeKeywords: [
-    '알림톡', '문자', '카카오',
-    '연동', '외부', '공지',
-    '자동화', '자동 발송',
-    '출력', '인쇄',
-  ],
-
   newFeatureKeywords: ['추가', '신규', '생성', '적용', '연동'],
   improvedKeywords: ['개선', '변경', '향상', '반영', '방지'],
 }
