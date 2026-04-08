@@ -28,9 +28,10 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {activeTab === 'notes' ? (
+        <div className={activeTab === 'notes' ? '' : 'hidden'}>
           <NoteTab rules={rules} redmineConfig={redmineConfig} />
-        ) : (
+        </div>
+        <div className={activeTab === 'rules' ? '' : 'hidden'}>
           <RulesTab
             rules={rules}
             onUpdateGroup={updateGroup}
@@ -40,7 +41,7 @@ export default function App() {
             redmineConfig={redmineConfig}
             onRedmineConfigChange={setRedmineConfig}
           />
-        )}
+        </div>
       </main>
     </div>
   )
