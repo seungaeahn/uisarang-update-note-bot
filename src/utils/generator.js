@@ -87,14 +87,14 @@ export function generateClaudePrompt(version, date, tickets, csvRows) {
 
   prompt += `**[업데이트 파일 테이블]**\n\n`
   prompt += `<details>\n\n<summary>업데이트 파일</summary>\n\n`
-  prompt += `| 구분 | 파일명 | Version | 파일경로 | 파일개수 |\n`
-  prompt += `| --- | --- | --- | --- | --- |\n`
+  prompt += `| 구분 | 파일명 | 버전 | 폴더 |\n`
+  prompt += `| --- | --- | --- | --- |\n`
   if (csvRows && csvRows.length > 0) {
     for (const row of csvRows) {
-      prompt += `| ${row['구분']} | ${row['파일명']} | ${row['Version']} | ${row['파일경로']} | ${row['파일개수']} |\n`
+      prompt += `| ${row['설명']} | ${row['파일명']} | ${row['버전']} | ${row['폴더']} |\n`
     }
   } else {
-    prompt += `| X.X.X.X | X.X.X.X | X.X.X.X | X.X.X.X | X.X.X.X |\n`
+    prompt += `| X.X.X.X | X.X.X.X | X.X.X.X | X.X.X.X |\n`
   }
   prompt += `\n</details>\n`
 
