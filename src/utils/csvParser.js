@@ -5,20 +5,29 @@ export function parseCsv(text) {
   const lines = clean.trim().split('\n')
   if (lines.length < 2) throw new Error('CSV 형식을 확인해 주세요')
 
-  const headers = lines[0].split('\t').map(h => h.trim())
-  // 탭 구분자가 아니면 쉼표로 재시도
-  const sep = headers.length >= REQUIRED_HEADERS.length ? '\t' : ','
-  const finalHeaders = sep === ',' ? lines[0].split(',').map(h => h.trim()) : headers
+  // 구분자 자동 감지 (탭 → 쉼표 → 세미콜론 순)
+  const firstLine = lines[0]
+  let sep = null
+  for (const candidate of ['\t', ',', ';']) {
+    const testHeaders = firstLine.split(candidate).map(h => h.trim())
+    if (REQUIRED_HEADERS.every(h => testHeaders.includes(h))) {
+      sep = candidate
+      break
+    }
+  }
 
-  for (const h of REQUIRED_HEADERS) {
-    if (!finalHeaders.includes(h)) throw new Error(`CSV 형식을 확인해 주세요 (누락된 헤더: ${h})`)
+  const headers = firstLine.split(sep ?? ',').map(h => h.trim())
+
+  if (!sep) {
+    const missing = REQUIRED_HEADERS.filter(h => !headers.includes(h))
+    throw new Error(`CSV 형식을 확인해 주세요 (누락된 헤더: ${missing.join(', ')})`)
   }
 
   const rows = lines.slice(1)
     .map(line => {
       const vals = line.split(sep).map(v => v.trim())
       const row = {}
-      finalHeaders.forEach((h, i) => { row[h] = vals[i] ?? '' })
+      headers.forEach((h, i) => { row[h] = vals[i] ?? '' })
       return row
     })
     .filter(r => r['설명'] || r['파일명'])

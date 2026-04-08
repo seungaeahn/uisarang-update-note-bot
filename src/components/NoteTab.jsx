@@ -252,20 +252,32 @@ export default function NoteTab({ rules, redmineConfig }) {
   const handleCsvUpload = e => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      try {
-        const rows = parseCsv(ev.target.result)
-        setCsvRows(rows)
-        setCsvFileName(file.name)
-        setCsvError(null)
-      } catch (err) {
-        setCsvRows(null)
-        setCsvFileName(null)
-        setCsvError(err.message)
-      }
+
+    const applyResult = (rows) => {
+      setCsvRows(rows)
+      setCsvFileName(file.name)
+      setCsvError(null)
     }
-    reader.readAsText(file, 'UTF-8')
+    const applyError = (msg) => {
+      setCsvRows(null)
+      setCsvFileName(null)
+      setCsvError(msg)
+    }
+
+    const tryRead = (encoding, onFail) => {
+      const reader = new FileReader()
+      reader.onload = ev => {
+        try {
+          applyResult(parseCsv(ev.target.result))
+        } catch (err) {
+          onFail ? onFail(err) : applyError(err.message)
+        }
+      }
+      reader.readAsText(file, encoding)
+    }
+
+    // UTF-8 시도 → 실패 시 EUC-KR 재시도 (엑셀 한글 파일 대응)
+    tryRead('UTF-8', () => tryRead('EUC-KR', err => applyError(err.message)))
     e.target.value = ''
   }
 
