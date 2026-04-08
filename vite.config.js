@@ -12,12 +12,6 @@ export default defineConfig({
         secure: false,
         rewrite: path => path.replace(/^\/api\/redmine/, ''),
       },
-      '/api/claude': {
-        target: 'https://api.anthropic.com',
-        changeOrigin: true,
-        secure: true,
-        rewrite: path => path.replace(/^\/api\/claude/, ''),
-      },
     }
   }
 })

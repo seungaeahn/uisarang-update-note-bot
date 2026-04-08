@@ -43,8 +43,6 @@ export default function RulesTab({
   onImport,
   redmineConfig,
   onRedmineConfigChange,
-  claudeApiKey,
-  onClaudeApiKeyChange,
 }) {
   const fileRef = useRef()
   const [importError, setImportError] = useState(null)
@@ -279,38 +277,7 @@ export default function RulesTab({
         </div>
       </section>
 
-      {/* ── Claude API 설정 ── */}
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Claude API 설정</h3>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-3">
-          <p className="text-xs text-gray-500">
-            노트 자동 생성에 사용해요. Anthropic Console에서 발급한 API 키를 입력하세요.
-          </p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Claude API 키</label>
-            <input
-              type="password"
-              value={claudeApiKey}
-              onChange={e => onClaudeApiKeyChange(e.target.value)}
-              placeholder="sk-ant-..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              console.anthropic.com → API Keys에서 확인할 수 있어요. 브라우저에만 저장돼요.
-            </p>
-          </div>
-          {claudeApiKey && (
-            <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-              ✅ API 키가 설정되어 있어요.
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── Redmine 연동 설정 ── */}
+{/* ── Redmine 연동 설정 ── */}
       <section>
         <div className="flex items-center gap-3 mb-4">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">레드마인 연동 설정</h3>

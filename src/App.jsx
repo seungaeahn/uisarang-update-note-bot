@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useRules } from './hooks/useRules.js'
 import { useRedmineConfig } from './hooks/useRedmineConfig.js'
-import { useClaudeConfig } from './hooks/useClaudeConfig.js'
 import NoteTab from './components/NoteTab.jsx'
 import RulesTab from './components/RulesTab.jsx'
 
@@ -9,7 +8,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('notes')
   const { rules, updateGroup, reset, exportRules, importRules } = useRules()
   const { config: redmineConfig, setConfig: setRedmineConfig } = useRedmineConfig()
-  const { claudeApiKey, setClaudeApiKey } = useClaudeConfig()
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -41,8 +39,6 @@ export default function App() {
             onImport={importRules}
             redmineConfig={redmineConfig}
             onRedmineConfigChange={setRedmineConfig}
-            claudeApiKey={claudeApiKey}
-            onClaudeApiKeyChange={setClaudeApiKey}
           />
         )}
       </main>
