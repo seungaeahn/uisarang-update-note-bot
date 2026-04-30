@@ -171,7 +171,7 @@ export default function NoteTab({ rules, redmineConfig }) {
 
       // Auto-fill version name from selected version
       const selectedVer = versions.find(v => String(v.id) === selectedVersionId)
-      if (selectedVer && !version) {
+      if (selectedVer) {
         setVersion(`의사랑 ${selectedVer.name}`)
       }
 
