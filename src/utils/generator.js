@@ -43,11 +43,12 @@ function ticketLabel(t) {
 // ─────────────────────────────────────────────
 // Claude Prompt  (CLAUDE.md 핵심 규칙 포함)
 // ─────────────────────────────────────────────
-export function generateClaudePrompt(version, date, tickets, csvRows) {
+export function generateClaudePrompt(version, date, tickets, csvRows, groupDate, fullDate) {
   const { newF, improved, bugs } = splitByCategory(tickets)
 
   let prompt = `버전: ${version || '(버전 미입력)'}\n`
-  prompt += `업데이트 날짜: ${date || '(날짜 미입력)'}\n\n`
+  prompt += `그룹 업데이트 날짜: ${groupDate || '(날짜 미입력)'}\n`
+  prompt += `전체 업데이트 날짜: ${fullDate || '(날짜 미입력)'}\n\n`
 
   if (newF.length > 0) {
     prompt += `### 새로운 기능 티켓\n`

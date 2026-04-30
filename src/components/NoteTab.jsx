@@ -40,6 +40,10 @@ export default function NoteTab({ rules, redmineConfig }) {
   const [csvError, setCsvError] = useState(null)
   const csvInputRef = useRef()
 
+  // ── Dates ──────────────────────────────────
+  const [groupDate, setGroupDate] = useState('')
+  const [fullDate, setFullDate] = useState('')
+
   // ── Output ────────────────────────────────
   const [promptCopied, setPromptCopied] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState(null)
@@ -282,7 +286,7 @@ export default function NoteTab({ rules, redmineConfig }) {
   }
 
   const handleGeneratePrompt = () => {
-    setGeneratedPrompt(generateClaudePrompt(version, date, outputTickets, csvRows))
+    setGeneratedPrompt(generateClaudePrompt(version, date, outputTickets, csvRows, groupDate, fullDate))
   }
 
   const handleCopyPrompt = async () => {
@@ -486,6 +490,31 @@ export default function NoteTab({ rules, redmineConfig }) {
             {csvError && (
               <p className="mt-2 text-xs text-red-600">{csvError}</p>
             )}
+          </div>
+
+          {/* ── 업데이트 날짜 입력 카드 ── */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <p className="text-sm font-medium text-gray-700 mb-3">📅 업데이트 날짜</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">그룹 업데이트 날짜</label>
+                <input
+                  type="date"
+                  value={groupDate}
+                  onChange={e => setGroupDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">전체 업데이트 날짜</label>
+                <input
+                  type="date"
+                  value={fullDate}
+                  onChange={e => setFullDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* ── Output ── */}
